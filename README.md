@@ -20,7 +20,7 @@
 ![Image shapes](result\shapeplot.png)
 
 Картика с алгоритмом GrahamScan:
-![Image graham](result\grahamplot.png)
+![Image graham](https://github.com/embrace0feternity/Geomerety-/blob/dev/result/grahamplot.png)
 
 Картика с триангуляцией:
 ![Image triangulation](result\triangulation.png)
