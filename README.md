@@ -17,10 +17,10 @@
 ```
 
 Картика со всеми отрисованными фигурами:
-![Image shapes](result\shapeplot.png)
+![Image shapes](https://github.com/embrace0feternity/Geomerety-/blob/dev/result/shapeplot.png)
 
 Картика с алгоритмом GrahamScan:
 ![Image graham](https://github.com/embrace0feternity/Geomerety-/blob/dev/result/grahamplot.png)
 
 Картика с триангуляцией:
-![Image triangulation](result\triangulation.png)
+![Image triangulation](https://github.com/embrace0feternity/Geomerety-/blob/dev/result/triangulation.png)
