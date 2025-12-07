@@ -1,7 +1,10 @@
 #include "shape_utils.hpp"
 #include <functional>
+#include <print>
+#include <iostream>
 
 namespace geometry::utils {
+
 // Разбивает строку на слова (по пробелам), игнорируя лишние пробелы
 std::vector<std::string_view> SplitIntoWords(std::string_view s) {
     std::vector<std::string_view> words;
@@ -54,6 +57,14 @@ std::optional<std::vector<double>> RequireSize(const std::vector<double>& v, siz
     return (v.size() == expected) ? std::make_optional(v) : std::nullopt;
 }
 
+std::optional<std::vector<double>> ExpectedPoints(const std::vector<double>& v, int expected = -1) {
+    if (v.size() % 2 == 1) return std::nullopt;
+    if (expected == -1) {
+        return std::make_optional(v);
+    }
+    return ((v.size() / 2) == expected) ? std::make_optional(v) : std::nullopt;
+}
+
 // Проверяет, что значение > 0
 std::optional<double> RequirePositive(double x) {
     return (x > 0) ? std::make_optional(x) : std::nullopt;
@@ -70,61 +81,83 @@ std::optional<int> RequireIntegerAtLeast(double d, int min_value) {
 
 // Конструкторы фигур
 
-/**
-    @brief Создаёт круг из параметров
-    @note Пример того как могла бы выглядеть эта функция:
-        if (v.size() != 3) return std::nullopt;
-        if (v[2] <= 0) return std::nullopt; // радиус должен быть > 0
-        return Circle{{v[0], v[1]}, v[2]};
-*/
+/// Creates a circle using it's center position (v[0]; v[1]) and a radius(v[2])
 std::optional<Shape> MakeCircle(const std::vector<double>& v) {
-    //Ваш код здесь
+    return RequireSize(v, 3)
+        .and_then([](const std::vector<double> &v){
+            return RequirePositive(v[2]);
+        })
+        .transform([&v](double radius){
+            return Circle { Point2D{ v[0], v[1] }, radius };
+        });
 }
 
-/**
-    @brief Создаёт линию из параметров
-    @note Пример того как могла бы выглядеть эта функция:
-        if (v.size() != 4) return std::nullopt;
-        return Line{{v[0], v[1]}, {v[2], v[3]}};
-*/
+/// Creates a line from 2 points ((v[0]; v[1]); (v[2], v[3]))
 std::optional<Shape> MakeLine(const std::vector<double>& v) {
-    //Ваш код здесь
+    return RequireSize(v, 4)
+        .transform([](const std::vector<double> &v){
+            return Line { Point2D{ v[0], v[1] }, Point2D{ v[2], v[3] } };
+        });
 }
 
-/**
-    @brief Создаёт треугольник из параметров
-    @note Пример того как могла бы выглядеть эта функция:
-        if (v.size() != 6) return std::nullopt;
-        return Triangle{{v[0], v[1]}, {v[2], v[3]}, {v[4], v[5]}};
-*/
+/// Creates a line from 3 points ((v[0]; v[1]); (v[2], v[3]), (v[4], v[5]))
 std::optional<Shape> MakeTriangle(const std::vector<double>& v) {
-    //Ваш код здесь
+    return RequireSize(v, 6)
+        .transform([](const std::vector<double> &v){
+            return Triangle { Point2D{ v[0], v[1] }, Point2D{ v[2], v[3] }, Point2D{ v[4], v[5] } };
+        });
 }
 
-/**
-    @brief Создаёт прямоугольник из параметров
-    @note Пример того как могла бы выглядеть эта функция:
-        if (v.size() != 4) return std::nullopt;
-        if (v[2] <= 0 || v[3] <= 0) return std::nullopt; // ширина/высота > 0
-        return Rectangle{{v[0], v[1]}, v[2], v[3]};
-*/
+/// Creates a rectagle with a left bottom point (v[0], v[1]),
+///  a width v[2] and a height v[3].
 std::optional<Shape> MakeRectangle(const std::vector<double>& v) {
-    //Ваш код здесь
+    return RequireSize(v, 4)
+        .and_then([](const std::vector<double> &v){
+            return RequirePositive(v[2]);
+        })
+        .and_then([&v](double){
+            return RequirePositive(v[3]);
+        })
+        .transform([&v](double){
+            return Rectangle { Point2D{ v[0], v[1] }, v[2], v[3] };
+        });
 }
 
-/**
-    @brief Создаёт правильный многоугольник из параметров
-    @note Пример того как могла бы выглядеть эта функция:
-        if (v.size() != 4) return std::nullopt;
-        if (v[2] <= 0) return std::nullopt; // радиус > 0
-        auto sides_opt = parse_double(std::to_string(v[3])); // v[3] — double, но sides — целое
-        if (!sides_opt.has_value()) return std::nullopt;
-        int sides = static_cast<int>(v[3]);
-        if (sides != v[3] || sides < 3) return std::nullopt; // должно быть целым и >=3
-        return RegularPolygon{{v[0], v[1]}, v[2], sides};
-*/
+/// Creates a polygon with the center position (v[0]; v[1]), radius v[2]
+///  and number of sides v[3]
+std::optional<Shape> MakeRegularPolygon(const std::vector<double>& v) {
+    return RequireSize(v, 4)
+        .and_then([](const std::vector<double> &v){
+            return RequirePositive(v[2]);
+        })
+        .and_then([&v](double){
+            return RequireIntegerAtLeast(v[3], 3);
+        })
+        .transform([&v](double){
+            return RegularPolygon { Point2D{ v[0], v[1] }, v[2], v[3] };
+        });
+}
+
+/// Creates an any form polygon
 std::optional<Shape> MakePolygon(const std::vector<double>& v) {
-    //Ваш код здесь
+    /// createPolygon will be called if and only if v has even number of points
+    auto createPolygon = [](const std::vector<double> &v){
+        std::vector<Point2D> rt;
+        rt.reserve(v.size() / 2);
+        for (int i = 0; i < v.size(); i += 2){
+            rt.emplace_back(v[i], v[i+1]);
+        }
+        return rt;
+    };
+
+    if (v.size() < 6) {
+        return std::nullopt;
+    }
+
+    return ExpectedPoints(v, -1)
+        .transform([&createPolygon](const std::vector<double> &v){
+            return Polygon { createPolygon(v) };
+        });
 }
 
 // Парсинг одной фигуры
@@ -147,6 +180,7 @@ std::optional<Shape> ParseSingleShape(std::string_view token) {
         if (t == "triangle") return MakeTriangle;
         if (t == "rectangle")return MakeRectangle;
         if (t == "polygon")  return MakePolygon;
+        if (t == "regularpolygon")  return MakeRegularPolygon;
         return std::nullopt;
     };
 
@@ -187,25 +221,58 @@ std::vector<Shape> ParseShapes(std::string_view input) {
 }
 
 std::vector<std::pair<Shape, Shape>> FindAllCollisions(std::span<const Shape> shapes) {
-    std::vector<std::pair<Shape, Shape>> collisions;
-
     /*
      * Используйте библиотеку ranges, чтобы найти все коллизии между фигурами методом BoundingBoxesOverlap
      *
      * Также используйте наиболее эффективный метод добавления объектов в collisions
      */
+    std::vector<std::pair<Shape, Shape>> collisions;
+    collisions.reserve(shapes.size());
+
+    /// Create a view of pairs(i-th, j-th), where indexes lay in ranges [0; shapes.size())
+    auto idxPairs = std::views::cartesian_product(
+        std::views::iota(0zu, shapes.size()),
+        std::views::iota(0zu, shapes.size()) 
+    );
+
+    /// Get rid of all the duplicates ({1,0} and {0, 1} are equal) and
+    ///  those pairs where i == j. 
+    auto idxUnique = idxPairs 
+        | std::views::filter([](const auto &pair){ 
+            auto [i, j] = pair;
+            return i < j; 
+        });
+
+    /// Look for collisions between remaining pairs.
+    auto collisionPairs = idxUnique
+        | std::views::filter([&shapes](const auto &pair) { 
+            auto [i, j] = pair; 
+            return queries::BoundingBoxesOverlap(shapes[i], shapes[j]);}) 
+        | std::views::transform([&shapes](const auto &pair){
+            auto [i, j] = pair; 
+            return std::make_pair(shapes[i], shapes[j]);
+        });
+
+    std::ranges::copy(collisionPairs, std::back_inserter(collisions));
 
     return collisions;
 }
 
 std::optional<size_t> FindHighestShape(std::span<const Shape> shapes) {
-
     /*
      * Используйте библиотеку ranges, чтобы найти самую высокую фигуру
      *
      * Важно: использование ручной итерации по фигурам не разрешается
      */
-
-    return std::nullopt;
+    if (shapes.size() == 0) {
+        return std::nullopt;
+    }
+    
+    auto heights = std::views::transform(shapes, [](const auto &s){
+        return std::visit([](const auto &s){ return s.Height(); }, s);
+    });
+    
+    return std::ranges::max(heights);
 }
+
 }

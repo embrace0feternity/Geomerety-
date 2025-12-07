@@ -10,6 +10,10 @@
 
 namespace geometry {
 
+enum GeometeryType {
+    LineType, TriangleType, RectangleType, RegularPolygonType, CircleType, PolygonType
+};
+
 /*
 * Добавьте к методам класса Point2D и Lines2DDyn все необходимые аттрибуты и спецификаторы
 * Важно: Возвращаемый тип и принимаемые аргументы менять не нужно
@@ -21,32 +25,39 @@ struct Point2D {
     constexpr Point2D(double x, double y) : x(x), y(y) {}
 
     // Comparison
-    bool operator<(const Point2D &other) { return x < other.x && y < other.y; }
-    bool operator==(const Point2D &other) {
+    [[nodiscard]] constexpr bool operator<(const Point2D &other) const noexcept { 
+        return x < other.x && y < other.y; 
+    }
+
+    [[nodiscard]] constexpr bool operator==(const Point2D &other) const noexcept {
         return x == other.x && y == other.y;
     }
 
     // Binary math operators
-    Point2D operator+(const Point2D &other) const{
+    [[nodiscard]] constexpr Point2D operator+(const Point2D &other) const noexcept {
         return {x + other.x, y + other.y};
     }
-    Point2D operator-(const Point2D &other) const{
+    [[nodiscard]] constexpr Point2D operator-(const Point2D &other) const noexcept {
         return {x - other.x, y - other.y};
     }
-    Point2D operator*(double value) { return {x * value, y * value}; }
-    Point2D operator/(double value) { return {x / value, y / value}; }
+    [[nodiscard]] constexpr Point2D operator*(double value) const noexcept { return {x * value, y * value}; }
+    [[nodiscard]] constexpr Point2D operator/(double value) const { return {x / value, y / value}; }
 
     // Binary geometry operations
-    double Dot(const Point2D &other) { return x * other.x + y * other.y; }
-    double Cross(const Point2D &other) { return x * other.y - y * other.x; }
-    double Length() { return std::sqrt(x * x + y * y); }
-    double DistanceTo(const Point2D &other) const { return (*this - other).Length(); }
+    [[nodiscard]] constexpr double Dot(const Point2D &other) const noexcept { return x * other.x + y * other.y; }
+    [[nodiscard]] constexpr double Cross(const Point2D &other) const noexcept { return x * other.y - y * other.x; }
+    [[nodiscard]] constexpr double Length() const noexcept { return std::sqrt(x * x + y * y); }
+    [[nodiscard]] constexpr double DistanceTo(const Point2D &other) const noexcept { return (*this - other).Length(); }
 
-    Point2D Normalize() {
+    [[nodiscard]] constexpr Point2D Normalize() const noexcept {
         const double len = Length();
         return len > 0 ? Point2D{x / len, y / len} : Point2D{0, 0};
     }
 };
+
+///
+///
+///
 
 template <size_t N>
 struct Lines2D {
@@ -54,24 +65,32 @@ struct Lines2D {
     std::array<double, N> y;
 };
 
+///
+///
+///
+
 struct Lines2DDyn {
     std::vector<double> x;
     std::vector<double> y;
 
-    void Reserve(size_t n) {
+    constexpr void Reserve(size_t n) {
         x.reserve(n);
         y.reserve(n);
     }
-    void PushBack(Point2D p) {
+    constexpr void PushBack(Point2D p) {
         x.push_back(p.x);
         y.push_back(p.y);
     }
-    void PushBack(double px, double py) {
+    constexpr void PushBack(double px, double py) {
         x.push_back(px);
         y.push_back(py);
     }
-    Point2D Front() { return {x.front(), y.front()}; }
+    [[nodiscard]] constexpr Point2D Front() const noexcept { return {x.front(), y.front()}; }
 };
+
+///
+///
+///
 
 struct BoundingBox {
     double min_x, min_y, max_x, max_y;
@@ -86,26 +105,36 @@ struct BoundingBox {
 
     [[nodiscard]] constexpr double Width() const noexcept { return max_x - min_x; }
     [[nodiscard]] constexpr double Height() const noexcept { return max_y - min_y; }
-    [[nodiscard]] constexpr Point2D Center() const noexcept { return {(min_x + max_x) / 2, (min_y + max_y) / 2}; }};
+    [[nodiscard]] constexpr Point2D Center() const noexcept { return {(min_x + max_x) / 2, (min_y + max_y) / 2}; }
+};
+
+///
+///
+///
 
 struct Line {
     Point2D start, end;
 
     constexpr Line(Point2D start, Point2D end) noexcept : start(start), end(end) {}
 
-    [[nodiscard]] constexpr double Length() noexcept { return start.DistanceTo(end); }
-    [[nodiscard]] constexpr Point2D Direction() noexcept { return (end - start).Normalize(); }
+    [[nodiscard]] constexpr double Length() const noexcept { return start.DistanceTo(end); }
+    [[nodiscard]] constexpr Point2D Direction() const noexcept { return (end - start).Normalize(); }
     [[nodiscard]] constexpr BoundingBox BoundBox() const noexcept {
         return {std::min(start.x, end.x), std::min(start.y, end.y), std::max(start.x, end.x), std::max(start.y, end.y)};
     }
     [[nodiscard]] constexpr double Height() const noexcept { return std::max(start.y, end.y); }
-    [[nodiscard]] constexpr Point2D Center() noexcept { return (start + end) / 2.0; }
+    [[nodiscard]] constexpr Point2D Center() const noexcept { return (start + end) / 2.0; }
 
     [[nodiscard]] constexpr std::array<Point2D, 2> Vertices() const noexcept {
-        return {Point2D{start.x, start.y}, {end.x, end.y}};
+        return {Point2D{start.x, start.y}, {end.x, end.y}}; 
     }
     [[nodiscard]] constexpr Lines2D<2> Lines() const noexcept { return {{start.x, end.x}, {start.y, end.y}}; }
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::LineType; }
 };
+
+///
+///
+///
 
 struct Triangle {
     Point2D a, b, c;
@@ -122,7 +151,12 @@ struct Triangle {
     [[nodiscard]] constexpr Point2D Center() const noexcept { return (a + b + c) / 3.0; }
 
     [[nodiscard]] constexpr Lines2D<4> Lines() const noexcept { return {{a.x, b.x, c.x, a.x}, {a.y, b.y, c.y, a.y}}; }
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::TriangleType; }
 };
+
+///
+///
+///
 
 struct Rectangle {
     Point2D bottom_left;
@@ -144,13 +178,18 @@ struct Rectangle {
                 {bottom_left.x, bottom_left.y + height}};
     }
     [[nodiscard]] constexpr double Height() const noexcept { return bottom_left.y + height; }
-    [[nodiscard]] constexpr Point2D Center() noexcept { return bottom_left + (Point2D{width, height} / 2.0); }
+    [[nodiscard]] constexpr Point2D Center() const noexcept { return bottom_left + (Point2D{width, height} / 2.0); }
 
     [[nodiscard]] constexpr Lines2D<5> Lines() const noexcept {
         return {{bottom_left.x, bottom_left.x, bottom_left.x + width, bottom_left.x + width, bottom_left.x},
                 {bottom_left.y, bottom_left.y + height, bottom_left.y + height, bottom_left.y, bottom_left.y}};
     }
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::RectangleType; }
 };
+
+///
+///
+///
 
 struct RegularPolygon {
     Point2D center_p;
@@ -160,7 +199,7 @@ struct RegularPolygon {
     constexpr RegularPolygon(Point2D center, double radius, int sides)
         : center_p(center), radius(radius), sides(sides) {}
 
-    std::vector<Point2D> Vertices() const {
+    [[nodiscard]] constexpr std::vector<Point2D> Vertices() const {
         std::vector<Point2D> points;
         points.reserve(sides);
 
@@ -177,7 +216,7 @@ struct RegularPolygon {
     [[nodiscard]] constexpr double Height() const noexcept { return center_p.y + radius; }
     [[nodiscard]] constexpr Point2D Center() const noexcept { return center_p; }
 
-    [[nodiscard]] constexpr Lines2DDyn Lines() {
+    [[nodiscard]] constexpr Lines2DDyn Lines() const {
         auto verts = Vertices();
         Lines2DDyn lines;
         lines.Reserve(verts.size() + 1);
@@ -187,7 +226,13 @@ struct RegularPolygon {
         lines.PushBack(lines.Front());
         return lines;
     }
+    
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::RegularPolygonType; }
 };
+
+///
+///
+///
 
 struct Circle {
     Point2D center_p;
@@ -221,7 +266,13 @@ struct Circle {
         lines.PushBack(lines.Front());
         return lines;
     }
+    
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::CircleType; }
 };
+
+///
+///
+///
 
 class Polygon {
 public:
@@ -248,9 +299,11 @@ public:
         lines.PushBack(lines.Front());
         return lines;
     }
+    
+    [[nodiscard]] constexpr GeometeryType Type() const noexcept { return GeometeryType::PolygonType; }
 
 private:
-    void CalculateBoundBox() {
+    void CalculateBoundBox() noexcept {
         double min_x = points_[0].x, max_x = points_[0].x;
         double min_y = points_[0].y, max_y = points_[0].y;
 
@@ -274,99 +327,3 @@ private:
 
 using Shape = std::variant<Line, Triangle, Rectangle, RegularPolygon, Circle, Polygon>;
 }  // namespace geometry
-
-template <>
-struct std::formatter<geometry::Point2D> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Point2D &p, FormatContext &ctx) {
-        return format_to(ctx.out(), "({:.2f}, {:.2f})", p.x, p.y);
-    }
-};
-template <>
-struct std::formatter<std::vector<geometry::Point2D>> {
-    bool use_new_line = false;
-
-    constexpr auto parse(std::format_parse_context &ctx) {
-        auto it = ctx.begin();
-
-        /* ваш код здесь */
-
-        return it;
-    }
-
-    template <typename FormatContext>
-    auto format(const std::vector<geometry::Point2D> &v, FormatContext &ctx) {
-
-        /* ваш код здесь */
-        return ctx.out();
-    }
-};
-
-template <>
-struct std::formatter<geometry::Line> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Line &l, FormatContext &ctx) {
-        return std::format_to(ctx.out(), "Line({}, {})", l.start, l.end);
-    }
-};
-
-template <>
-struct std::formatter<geometry::Circle> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Circle &c, FormatContext &ctx) {
-        return std::format_to(ctx.out(), "Circle(center={}, r={:.2f})", c.center_p, c.radius);
-    }
-};
-
-template <>
-struct std::formatter<geometry::Rectangle> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Rectangle &r, FormatContext &ctx) {
-        return std::format_to(ctx.out(), "Rectangle(bottom_left={}, w={:.2f}, h={:.2f})", r.bottom_left, r.width,
-                              r.height);
-    }
-};
-
-template <>
-struct std::formatter<geometry::RegularPolygon> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::RegularPolygon &p, FormatContext &ctx) {
-        return std::format_to(ctx.out(), "RegularPolygon(center={}, r={:.2f}, sides={})", p.center_p, p.radius,
-                              p.sides);
-    }
-};
-template <>
-struct std::formatter<geometry::Triangle> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Triangle &t, FormatContext &ctx) {
-        return std::format_to(ctx.out(), "Triangle({}, {}, {})", t.a, t.b, t.c);
-    }
-};
-template <>
-struct std::formatter<geometry::Polygon> {
-    constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const geometry::Polygon &poly, FormatContext &ctx) {
-        auto out = ctx.out();
-        out = std::format_to(out, "Polygon[{} points]: [", poly.Vertices().size());
-
-        for (const auto &p : poly.Vertices()) {
-            out = std::format_to(out, "{} ", p);
-        }
-
-        return std::format_to(out, "]");
-    }
-};
