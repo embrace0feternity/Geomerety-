@@ -10,6 +10,7 @@ template <class... Ts>
 struct Multilambda : Ts... {
     using Ts::operator()...;
 };
+
 auto DrawConfig()
 {
     using namespace geometry;
@@ -27,10 +28,12 @@ auto DrawConfig()
     return f;
 }
 
-void Draw(std::span<geometry::Shape> shapes) {
+void Draw(std::span<geometry::Shape> shapes, const std::string &resultFilePath) {
     using namespace geometry;
     using namespace matplot;
     const auto& fh = DrawConfig();
+
+    matplot::hold(true);
     for (const auto &[index, shape] : std::ranges::views::enumerate(shapes)) {
         /**
          * @brief Для каждой фигуры примените `std::visit` с помощью мульти-лямбдs (Multilambda),
@@ -49,7 +52,23 @@ void Draw(std::span<geometry::Shape> shapes) {
          * 
          */
 
-        //ваш код тут
+        auto drawPlot = [](const auto &shape, std::uint16_t lineWidth, std::string_view color){
+            auto lines = shape.Lines();
+            auto p = matplot::plot(lines.x, lines.y);
+            p->color(color);
+            p->line_width(lineWidth);
+        };
+
+        std::visit(Multilambda{
+            [&drawPlot](const Line &s){ drawPlot(s, 2, "yellow");},
+            [&drawPlot](const Triangle &s){ drawPlot(s, 2, "blue");},
+            [&drawPlot](const Rectangle &s){ drawPlot(s, 2, "green");},
+            [&drawPlot](const RegularPolygon &s){ drawPlot(s, 2, "magenta");},
+            [&drawPlot](const Circle &s){ drawPlot(s, 2, "red");},
+            [&drawPlot](const Polygon &s){ drawPlot(s, 2, "cyan");},
+            [](const auto &s){ throw std::logic_error("Non supported type"); }        
+        }, shape);        
+         
         // Add shape number
         const auto center = shape.visit([](auto &&s) { return s.Center(); });
         auto t = text(center.x, center.y, std::to_string(index));
@@ -57,16 +76,19 @@ void Draw(std::span<geometry::Shape> shapes) {
         t->color("black");
     }
 
-    // Display plot
-    fh->show();
+    matplot::hold(false);
+    auto fig = matplot::gcf();
+    fig->save(resultFilePath);
+    std::println("Shape plot has been saved to the {} path", resultFilePath);
 }
 
-void Draw(std::span<const geometry::triangulation::DelaunayTriangle> triangles) {
+void Draw(std::span<const geometry::triangulation::DelaunayTriangle> triangles, const std::string &resultFilePath) {
     using namespace geometry;
     using namespace matplot;
     
     const auto& fh = DrawConfig();
 
+    matplot::hold(true);
     for (const auto &[index, d_triangle] : std::ranges::views::enumerate(triangles)) {
         const geometry::Triangle tri{d_triangle.a, d_triangle.b, d_triangle.c};
         const auto lines = tri.Lines();
@@ -78,9 +100,11 @@ void Draw(std::span<const geometry::triangulation::DelaunayTriangle> triangles) 
         t->font_size(14);
         t->color("black");
     }
+    matplot::hold(false);
 
-    // Display plot
-    fh->show();
+    auto fig = matplot::gcf();
+    fig->save(resultFilePath);
+    std::println("Triangulation algorithm plot has been saved to the {} path", resultFilePath);
 }
 
 }  // namespace geometry::visualization

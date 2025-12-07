@@ -1,5 +1,6 @@
 #pragma once
 #include "geometry.hpp"
+#include "queries.hpp"
 #include <utility>
 #include <vector>
 
